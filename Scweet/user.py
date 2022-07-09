@@ -14,7 +14,24 @@ def get_user_id(username):
     }
     s = requests.Session()
     r = s.post('https://tweeterid.com/ajax.php',data={'input': username},headers=headers)
-    return r.text
+
+    return r
+
+def find_user_id(username):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
+        'Accept': 'application/json, text/html, */*; q=0.01',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest',
+         }
+    s = requests.Session()
+    r = requests.post('https://virtualfollow.com/search-profile-get-twitter-ID-username-converter',data={'SearchMe':username,'search' : '提交', 'session_csrf':''},headers=headers,timeout=(2,10))
+    r = r.text
+    r = r.split("ID for")[1]
+    r = r.split(": ")[1]
+    r = r.split("<")[0]
+    print(r)
+    return r
 
 def get_user_information(users, driver=None, headless=True):
     """ get user information if the "from_account" argument is specified """
@@ -126,14 +143,15 @@ def get_user_info(username,driver=None,headless=True):
         except Exception as e:
             # print(e)
             try:
-
+                join_date = driver.find_element_by_xpath(
+                    '//div[contains(@data-testid,"UserProfileHeader_Items")]/span[1]').text
                 location = ""
             except Exception as e:
                 # print(e)
 
                 location = ""
     driver.close()
-    id = get_user_id(username)
+    id = find_user_id(username)
     print(id,location)
     return id,location
 
@@ -169,14 +187,19 @@ def get_users_following(users, env, verbose=1, headless=True, wait=2, limit=floa
     return following
 
 def get_users_following_info(users,env,verbose = 1, headless = False, wait = 2, limit = float('inf'),file_path = None):
-    follow_elem,follow_id = utils.get_users_follow_info(users,headless,env,"following",verbose,wait=wait,limit=limit)
+    user_following = get_users_following(users,env,file_path='users_following.csv')
+    print(user_following)
+    follow_elem,follow_id = utils.get_users_follow_info(users,headless,env,"following",verbose,wait=wait,limit=limit,outputfile=file_path)
     print(follow_elem,follow_id)
     return follow_elem,follow_id
 
 def get_users_followers_info(users,env,verbose = 1, headless = False, wait = 2, limit = float('inf'),file_path = None):
-    follow_elem,follow_id = utils.get_users_follow_info(users,headless,env,"followers",verbose,wait=wait,limit=limit)
+    user_followers = get_users_followers(users,env)
+    print(user_followers)
+    follow_elem,follow_id = utils.get_users_follow_info(users,headless,env,"followers",verbose,wait=wait,limit=limit,outputfile=file_path)
     print(follow_elem)
     print(follow_id)
+
     return follow_elem,follow_id
 
 def hasNumbers(inputString):

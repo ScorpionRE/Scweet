@@ -118,8 +118,16 @@ def get_data(card, save_images=False, save_dir=None):
     except:
         return
 
+    # is_retweet
+    try:
+        if '@XHNews' != handle:
+            is_retweet = '1'
+        else:
+            is_retweet = '0'
+    except:
+        return
     tweet = (
-        username, handle, postdate, text, embedded, emojis, reply_cnt, retweet_cnt, like_cnt, image_links, tweet_url)
+        username, handle, postdate, text, embedded, emojis, reply_cnt, retweet_cnt, like_cnt, image_links, tweet_url, is_retweet)
     return tweet
 
 
@@ -133,6 +141,13 @@ def init_driver(headless=True, proxy=None, show_images=False, option=None, firef
         driver_path = geckodriver_autoinstaller.install()
     else:
         options = ChromeOptions()
+        prefs = {
+            'profile.default_content_setting_values':
+                {
+                    'notifications': 2
+                }
+        }
+        options.add_experimental_option('prefs', prefs)
         driver_path = chromedriver_autoinstaller.install()
 
     if headless is True:
@@ -289,13 +304,14 @@ def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limi
             tweet = get_data(card, save_images, save_images_dir)
             if tweet:
                 # check if the tweet is unique
-                tweet_id = ''.join(tweet[:-2])
+                tweet_id = ''.join(tweet[:-3])
                 if tweet_id not in tweet_ids:
                     tweet_ids.add(tweet_id)
+                    print(tweet)
+                    writer.writerow(tweet)
                     data.append(tweet)
                     last_date = str(tweet[2])
                     print("Tweet made at: " + str(last_date) + " is found.")
-                    writer.writerow(tweet)
                     tweet_parsed += 1
                     if tweet_parsed >= limit:
                         break
@@ -305,7 +321,8 @@ def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limi
             scroll += 1
             print("scroll ", scroll)
             sleep(random.uniform(0.5, 1.5))
-            driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+            #driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+            driver.execute_script('window.scrollBy(0, 500);')
             curr_position = driver.execute_script("return window.pageYOffset;")
             if last_position == curr_position:
                 scroll_attempt += 1
@@ -318,6 +335,7 @@ def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limi
             else:
                 last_position = curr_position
                 break
+
     return driver, data, writer, tweet_ids, scrolling, tweet_parsed, scroll, last_position
 
 
@@ -393,7 +411,7 @@ def get_users_follow(users, headless, env, follow=None, verbose=1, wait=2, limit
                 if last_position == curr_position:
                     scroll_attempt += 1
                     # end of scroll region
-                    if scroll_attempt >= 2:
+                    if scroll_attempt >= 5:
                         scrolling = False
                         break
                     else:
@@ -421,12 +439,14 @@ def get_users_follow_info(users, headless, env, follow=None, verbose=1, wait=2, 
 
     for user in users:
         # if the login fails, find the new log in button and log in again.
+        f = open(user + outputfile, 'w', newline='')
+        csvwriter = csv.writer(f)
         if check_exists_by_link_text("Log in", driver):
             print("Login failed. Retry...")
             login = driver.find_element_by_link_text("Log in")
-            sleep(random.uniform(wait - 0.5, wait + 0.5))
+            sleep(6)
             driver.execute_script("arguments[0].click();", login)
-            sleep(random.uniform(wait - 0.5, wait + 0.5))
+            sleep(6)
             sleep(wait)
             log_in(driver, env)
             sleep(wait)
@@ -438,7 +458,7 @@ def get_users_follow_info(users, headless, env, follow=None, verbose=1, wait=2, 
             sleep(wait)
         print("Crawling " + user + " " + follow)
         driver.get('https://twitter.com/' + user + '/' + follow)
-        sleep(random.uniform(wait - 0.5, wait + 0.5))
+        sleep(8)
         # check if we must keep scrolling
         scrolling = True
         last_position = driver.execute_script("return window.pageYOffset;")
@@ -465,15 +485,15 @@ def get_users_follow_info(users, headless, env, follow=None, verbose=1, wait=2, 
                 if len(follows_elem) >= limit:
                     is_limit = True
                     break
-                if verbose:
+                #if verbose:
+                    # print(follow_elem)
+                    # if follows_elem not in follows_elem:
+                    #     id,location = get_user_info(follow_elem)
+                        #print(location)
 
-                    id,location = get_user_info(follow_elem)
-                    print(location)
-                    with open(user+outputfile,'a',newline='') as f:
-                        csvwriter = csv.writer(f)
-                        csvwriter.writerow((follow_elem,id,location))
-
+                        # csvwriter.writerow((follow_elem,id,location))
             print("Found " + str(len(follows_elem)) + " " + follow)
+            print(follows_elem)
             scroll_attempt = 0
             while not is_limit:
                 sleep(random.uniform(wait - 0.5, wait + 0.5))
@@ -491,8 +511,8 @@ def get_users_follow_info(users, headless, env, follow=None, verbose=1, wait=2, 
                 else:
                     last_position = curr_position
                     break
+        f.close()
 
-        follows_users[user] = follows_elem
     return follows_elem
 
 
