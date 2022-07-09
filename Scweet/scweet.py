@@ -5,10 +5,59 @@ import argparse
 from time import sleep
 import random
 import pandas as pd
+from pandas.core import window
 
-from .utils import init_driver, get_last_date_from_csv, log_search_page, keep_scroling, dowload_images
+from .utils import init_driver, get_last_date_from_csv, log_search_page, keep_scroling, dowload_images, log_in
 
 
+def scrape_user(username,tweet_ids=set(),headless=True,save_dir='outputs',limit=float("inf"),resume=False,proxy=None,show_images=False,save_images=False,save_file="output.csv",proximity=False):
+    header = ['UserScreenName', 'UserName', 'Timestamp', 'Text', 'Embedded_text', 'Emojis',
+                                       'Comments', 'Likes', 'Retweets', 'Image link', 'Tweet URL','is_retweet']
+    data = []
+
+
+    write_mode = 'w'
+
+
+    if save_images == True:
+        show_images = True
+
+    driver = init_driver(headless,proxy,show_images)
+
+    if resume:
+        #since = str(get_last_date_from_csv(save_file))[:10]
+        write_mode = 'a'
+    log_in(driver, ".env", wait=5)
+    sleep(5)
+
+    driver.get('https://twitter.com/' + username)
+    with open(save_file,write_mode,newline='',encoding='utf-8') as f:
+        writer = csv.writer(f)
+        if write_mode == 'w':
+            writer.writerow(header)
+
+        scrolling = True
+        while scrolling == True:
+            scroll = 0
+            last_position = driver.execute_script("return window.pageYOffset;")
+
+            # scroll until
+            tweet_parsed = 0
+            # sleep
+            sleep(random.uniform(0.5, 1.5))
+            # start scrolling and get tweets
+            driver, data, writer, tweet_ids, scrolling, tweet_parsed, scroll, last_position = \
+                keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limit, scroll, last_position)
+
+            #print(data)
+
+
+    data = pd.DataFrame(data, columns=['UserScreenName', 'UserName', 'Timestamp', 'Text', 'Embedded_text', 'Emojis',
+                                       'Comments', 'Likes', 'Retweets', 'Image link', 'Tweet URL','is_retweet'])
+
+    print(data)
+    driver.close()
+    return tweet_ids
 
 def scrape(since, until=None, words=None, to_account=None, from_account=None, mention_account=None, interval=5, lang=None,
           headless=True, limit=float("inf"), display_type="Top", resume=False, proxy=None, hashtag=None, 
