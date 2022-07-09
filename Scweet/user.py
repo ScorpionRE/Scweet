@@ -1,8 +1,20 @@
+import requests
+
 from . import utils
 from time import sleep
 import random
 import json
 
+def get_user_id(username):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
+        'Accept': 'application/json, text/javascript, */*; q=0.01',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest'
+    }
+    s = requests.Session()
+    r = s.post('https://tweeterid.com/ajax.php',data={'input': username},headers=headers)
+    return r.text
 
 def get_user_information(users, driver=None, headless=True):
     """ get user information if the "from_account" argument is specified """
@@ -71,6 +83,7 @@ def get_user_information(users, driver=None, headless=True):
                         join_date = ""
                         birthday = ""
                         location = ""
+            id = get_user_id(user)
             print("--------------- " + user + " information : ---------------")
             print("Following : ", following)
             print("Followers : ", followers)
@@ -79,15 +92,50 @@ def get_user_information(users, driver=None, headless=True):
             print("Birth date : ", birthday)
             print("Description : ", desc)
             print("Website : ", website)
+            print("id : ", id)
             users_info[user] = [following, followers, join_date, birthday, location, website, desc]
 
             if i == len(users) - 1:
                 driver.close()
-                return users_info
+                #return users_info
+                return id,location
         else:
             print("You must specify the user")
             continue
 
+def get_user_info(username,driver=None,headless=True):
+    driver = utils.init_driver(headless=headless)
+    log_user_page(username, driver)
+
+    try:
+
+        location = driver.find_element_by_xpath(
+            '//div[contains(@data-testid,"UserProfileHeader_Items")]/span[1]').text
+    except Exception as e:
+        # print(e)
+        try:
+
+            span1 = driver.find_element_by_xpath(
+                '//div[contains(@data-testid,"UserProfileHeader_Items")]/span[1]').text
+            if hasNumbers(span1):
+                birthday = span1
+                location = ""
+            else:
+                location = span1
+                birthday = ""
+        except Exception as e:
+            # print(e)
+            try:
+
+                location = ""
+            except Exception as e:
+                # print(e)
+
+                location = ""
+    driver.close()
+    id = get_user_id(username)
+    print(id,location)
+    return id,location
 
 def log_user_page(user, driver, headless=True):
     sleep(random.uniform(1, 2))
@@ -120,6 +168,16 @@ def get_users_following(users, env, verbose=1, headless=True, wait=2, limit=floa
         print(f"file saved in {file_path}")
     return following
 
+def get_users_following_info(users,env,verbose = 1, headless = False, wait = 2, limit = float('inf'),file_path = None):
+    follow_elem,follow_id = utils.get_users_follow_info(users,headless,env,"following",verbose,wait=wait,limit=limit)
+    print(follow_elem,follow_id)
+    return follow_elem,follow_id
+
+def get_users_followers_info(users,env,verbose = 1, headless = False, wait = 2, limit = float('inf'),file_path = None):
+    follow_elem,follow_id = utils.get_users_follow_info(users,headless,env,"followers",verbose,wait=wait,limit=limit)
+    print(follow_elem)
+    print(follow_id)
+    return follow_elem,follow_id
 
 def hasNumbers(inputString):
     return any(char.isdigit() for char in inputString)
