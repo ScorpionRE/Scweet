@@ -4,7 +4,8 @@ from . import utils
 from time import sleep
 import random
 import json
-
+from requests.adapters import HTTPAdapter
+from requests.packages.urllib3.util.retry import Retry
 def get_user_id(username):
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
@@ -25,13 +26,30 @@ def find_user_id(username):
         'X-Requested-With': 'XMLHttpRequest',
          }
     s = requests.Session()
-    r = requests.post('https://virtualfollow.com/search-profile-get-twitter-ID-username-converter',data={'SearchMe':username,'search' : '提交', 'session_csrf':''},headers=headers,timeout=(2,10))
+    r = requests.post('https://virtualfollow.com/search-profile-get-twitter-ID-username-converter',data={'SearchMe':username,'search' : '提交', 'session_csrf':''},headers=headers,timeout=(6,10))
     r = r.text
     r = r.split("ID for")[1]
     r = r.split(": ")[1]
     r = r.split("<")[0]
     print(r)
     return r
+
+def get_user_idlocation(username):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:28.0) Gecko/20100101 Firefox/28.0',
+        'Accept': 'application/json, text/html, */*; q=0.01',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest',
+    }
+    with requests.get("https://truetn.com/"+username,headers=headers,stream=True) as r:
+        r = r.text
+        id = r.split("profile_banners/")[1]
+        id = id.split('/')[0]
+        print(id)
+        location = r.split('location":"')[1]
+        location = location.split('"')[0]
+        print(location)
+    return id,location
 
 def get_user_information(users, driver=None, headless=True):
     """ get user information if the "from_account" argument is specified """
@@ -120,6 +138,27 @@ def get_user_information(users, driver=None, headless=True):
             print("You must specify the user")
             continue
 
+def get_user_info_request(username):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/103.0.0.0 Safari/537.36',
+        'Accept': 'application/json, text/html, */*; q=0.01',
+        'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'X-Requested-With': 'XMLHttpRequest',
+        'cookie':'guest_id_marketing=v1%3A165742842451594540; guest_id_ads=v1%3A165742842451594540; personalization_id="v1_7RzmXAenHye3xdeOYVEYFg=="; guest_id=v1%3A165742842451594540; ct0=ed0c2e3e82d65c7afa0abbc0e19273e0; gt=1545993001041768448; _ga=GA1.2.1283528093.1657428431; _gid=GA1.2.1446441807.1657428431',
+        'x-csrf-token':'ed0c2e3e82d65c7afa0abbc0e19273e0',
+        'x-guest-token':'1545993001041768448',
+        'x-connection-hash':'10746c07f2bbc7acc3e077e18c7bae70e816bce24e58467185070511a9dade4f',
+    }
+    s = requests.Session()
+    retry = Retry(connect=3, backoff_factor=0.5)
+    adapter = HTTPAdapter(max_retries=retry)
+    s.mount('https://',adapter)
+
+    va = {"screen_name":username,"withSafetyModeUserFields":True,"withSuperFollowsUserFields":True}
+    r = s.get('https://twitter.com/i/api/graphql/mCbpQvZAw6zu_4PvuAUVVQ/UserByScreenName?variables=%7B%22screen_name%22%3A%22china_amb_india%22%2C%22withSafetyModeUserFields%22%3Atrue%2C%22withSuperFollowsUserFields%22%3Atrue%7D' , headers=headers, timeout=(5, 10))
+    r = r.text
+    print(r)
+
 def get_user_info(username,driver=None,headless=True):
     driver = utils.init_driver(headless=headless)
     log_user_page(username, driver)
@@ -151,9 +190,9 @@ def get_user_info(username,driver=None,headless=True):
 
                 location = ""
     driver.close()
-    id = find_user_id(username)
-    print(id,location)
-    return id,location
+    #id = find_user_id(username)
+    print(location)
+    return location
 
 def log_user_page(user, driver, headless=True):
     sleep(random.uniform(1, 2))

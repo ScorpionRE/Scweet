@@ -30,7 +30,7 @@ from .const import get_username, get_password, get_email
 from Scweet.Scweet.user import get_user_id
 
 
-def get_data(card, save_images=False, save_dir=None):
+def get_data(user,card, save_images=False, save_dir=None):
     """Extract data from tweet card"""
     image_links = []
 
@@ -120,7 +120,8 @@ def get_data(card, save_images=False, save_dir=None):
 
     # is_retweet
     try:
-        if '@XHNews' != handle:
+        # TODO: username
+        if user != handle:
             is_retweet = '1'
         else:
             is_retweet = '0'
@@ -303,10 +304,11 @@ def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limi
         for card in page_cards:
             tweet = get_data(card, save_images, save_images_dir)
             if tweet:
-                # check if the tweet is unique
-                tweet_id = ''.join(tweet[:-3])
+                # check if the tweet is unique  post_date
+                tweet_id = ''.join(tweet[-2])
                 if tweet_id not in tweet_ids:
                     tweet_ids.add(tweet_id)
+
                     print(tweet)
                     writer.writerow(tweet)
                     data.append(tweet)
@@ -315,6 +317,7 @@ def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limi
                     tweet_parsed += 1
                     if tweet_parsed >= limit:
                         break
+        print(tweet_ids)
         scroll_attempt = 0
         while tweet_parsed < limit:
             # check scroll position
@@ -322,12 +325,12 @@ def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limi
             print("scroll ", scroll)
             sleep(random.uniform(0.5, 1.5))
             #driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
-            driver.execute_script('window.scrollBy(0, 500);')
+            driver.execute_script('window.scrollBy(0, 1000);')
             curr_position = driver.execute_script("return window.pageYOffset;")
             if last_position == curr_position:
                 scroll_attempt += 1
                 # end of scroll region
-                if scroll_attempt >= 2:
+                if scroll_attempt >= 5:
                     scrolling = False
                     break
                 else:
@@ -400,7 +403,8 @@ def get_users_follow(users, headless, env, follow=None, verbose=1, wait=2, limit
                     break
                 if verbose:
                     print(follow_elem)
-
+            with open(user+follow+'.txt','w') as f:
+                f.write(','.join(follows_elem))
             print("Found " + str(len(follows_elem)) + " " + follow)
             scroll_attempt = 0
             while not is_limit:
@@ -411,11 +415,11 @@ def get_users_follow(users, headless, env, follow=None, verbose=1, wait=2, limit
                 if last_position == curr_position:
                     scroll_attempt += 1
                     # end of scroll region
-                    if scroll_attempt >= 5:
+                    if scroll_attempt >= 8:
                         scrolling = False
                         break
                     else:
-                        sleep(random.uniform(wait - 0.5, wait + 0.5))  # attempt another scroll
+                        sleep(random.uniform(8,12))  # attempt another scroll
                 else:
                     last_position = curr_position
                     break
