@@ -120,7 +120,7 @@ def get_data(user,card, save_images=False, save_dir=None):
 
     # is_retweet
     try:
-        # TODO: username
+
         if user != handle:
             is_retweet = '1'
         else:
@@ -286,6 +286,59 @@ def log_in(driver, env, timeout=20, wait=4):
     password_el.send_keys(Keys.RETURN)
     sleep(random.uniform(wait, wait + 1))
 
+def keep_scroling1(username,driver, data, writer, tweet_ids, scrolling, tweet_parsed, limit, scroll, last_position,
+                  save_images=False):
+    """ scrolling function for tweets crawling"""
+
+    save_images_dir = "/images"
+
+    if save_images == True:
+        if not os.path.exists(save_images_dir):
+            os.mkdir(save_images_dir)
+
+    while scrolling and tweet_parsed < limit:
+        sleep(random.uniform(0.5, 1.5))
+        # get the card of tweets
+        page_cards = driver.find_elements(by=By.XPATH, value='//article[@data-testid="tweet"]')  # changed div by article
+        for card in page_cards:
+            tweet = get_data(username,card, save_images, save_images_dir)
+            if tweet:
+                # check if the tweet is unique  post_date
+                tweet_id = ''.join(tweet[-2])
+                if tweet_id not in tweet_ids:
+                    tweet_ids.add(tweet_id)
+
+                    print(tweet)
+                    writer.writerow(tweet)
+                    data.append(tweet)
+                    last_date = str(tweet[2])
+                    print("Tweet made at: " + str(last_date) + " is found.")
+                    tweet_parsed += 1
+                    if tweet_parsed >= limit:
+                        break
+        print(tweet_ids)
+        scroll_attempt = 0
+        while tweet_parsed < limit:
+            # check scroll position
+            scroll += 1
+            print("scroll ", scroll)
+            sleep(random.uniform(0.5, 1.5))
+            #driver.execute_script('window.scrollTo(0, document.body.scrollHeight);')
+            driver.execute_script('window.scrollBy(0, 1000);')
+            curr_position = driver.execute_script("return window.pageYOffset;")
+            if last_position == curr_position:
+                scroll_attempt += 1
+                # end of scroll region
+                if scroll_attempt >= 5:
+                    scrolling = False
+                    break
+                else:
+                    sleep(random.uniform(0.5, 1.5))  # attempt another scroll
+            else:
+                last_position = curr_position
+                break
+
+    return driver, data, writer, tweet_ids, scrolling, tweet_parsed, scroll, last_position
 
 def keep_scroling(driver, data, writer, tweet_ids, scrolling, tweet_parsed, limit, scroll, last_position,
                   save_images=False):

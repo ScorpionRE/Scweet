@@ -7,12 +7,11 @@ import random
 import pandas as pd
 from pandas.core import window
 
-from .utils import init_driver, get_last_date_from_csv, log_search_page, keep_scroling, dowload_images, log_in
+from .utils import init_driver, get_last_date_from_csv, log_search_page, keep_scroling,keep_scroling1, dowload_images, log_in
 
 
 def scrape_user(username,tweet_ids=set(),headless=True,save_dir='outputs',limit=float("inf"),resume=False,proxy=None,show_images=False,save_images=False,save_file="output.csv",proximity=False):
-    header = ['UserScreenName', 'UserName', 'Timestamp', 'Text', 'Embedded_text', 'Emojis',
-                                       'Comments', 'Likes', 'Retweets', 'Image link', 'Tweet URL','is_retweet']
+    header = ['UserScreenName', 'UserName', 'Timestamp', 'Text', 'Embedded_text', 'Emojis','Comments', 'Likes', 'Retweets', 'Image link', 'Tweet URL','is_retweet']
     data = []
 
 
@@ -47,14 +46,12 @@ def scrape_user(username,tweet_ids=set(),headless=True,save_dir='outputs',limit=
             # sleep
             sleep(random.uniform(0.5, 1.5))
             # start scrolling and get tweets
-            driver, data, writer, tweet_ids, scrolling, tweet_parsed, scroll, last_position = \
-                keep_scroling(username,driver, data, writer, tweet_ids, scrolling, tweet_parsed, limit, scroll, last_position)
+            driver, data, writer, tweet_ids, scrolling, tweet_parsed, scroll, last_position = keep_scroling1(username,driver, data, writer, tweet_ids, scrolling, tweet_parsed, limit, scroll, last_position)
 
             #print(data)
 
 
-    data = pd.DataFrame(data, columns=['UserScreenName', 'UserName', 'Timestamp', 'Text', 'Embedded_text', 'Emojis',
-                                       'Comments', 'Likes', 'Retweets', 'Image link', 'Tweet URL','is_retweet'])
+    data = pd.DataFrame(data, columns=['UserScreenName', 'UserName', 'Timestamp', 'Text', 'Embedded_text', 'Emojis','Comments', 'Likes', 'Retweets', 'Image link', 'Tweet URL','is_retweet'])
 
     print(data)
     driver.close()

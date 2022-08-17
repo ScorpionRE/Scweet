@@ -4,6 +4,7 @@
 
 Recently, Twitter has banned almost every Twitter scraper. This repository presents an alternative tool to scrape Twitter based on 3 functions:  
 - [scrape](https://github.com/Altimis/Scweet/blob/master/Scweet/scweet.py): Scrapes all the information regarding tweets between two given dates, for a given language and list of words or account name, in the form of a csv file containing retrieved data (more storage methods will be added). 
+- [scrape_user](https://github.com/Altimis/Scweet/blob/master/Scweet/scweet.py): Scrapes all the information regarding tweets and retweets from the user's homepage, in the form of a csv file containing retrieved data
 - [get_user_information](https://github.com/Altimis/Scweet/blob/master/Scweet/user.py): Scrapes users information, incluing number of following and followers, location and description.
 - [get_users_followers and get_users_following](https://github.com/Altimis/Scweet/blob/master/Scweet/user.py): Scrapes followers and following accounts for a given list of users.  
 
@@ -11,7 +12,7 @@ It is also possible to download the images showed in tweets by passing the argum
 
 Authentication is required for scraping followers/following. It is recommended to log in with a new account, otherwise the account could be banned if the list of followers is very long. To log in to your account, you need to enter your username `SCWEET_USERNAME` and password `SCWEET_PASSWORD` in the [.env](https://github.com/Altimis/Scweet/blob/master/.env) file. You can control the `wait` parameter in the `get_users_followers` and `get_users_following` functions according to you internet speed. 
 
-## Requirements : 
+## Requirements :
 
 `pip install -r requirements.txt`
 
@@ -34,6 +35,7 @@ The CSV file contains the following features (for each tweet) :
 - 'Retweets' : number of retweets
 - 'Image link' : link of the image in the tweet
 - 'Tweet URL' : tweet URL
+- 'is_retweet' : whether it's retweet
 
 ### Following / Followers :
 
